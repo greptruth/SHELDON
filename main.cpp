@@ -192,6 +192,85 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed){
 
 void blobDetection(Mat cameraFeed)
 {
+	cv::SimpleBlobDetector::Params params;
+ 
+	// Change thresholds
+	params.minThreshold = 10;
+	params.maxThreshold = 200;
+	 
+	// Filter by Area.
+	params.filterByArea = false;
+	params.minArea = 15;
+	 
+	// Filter by Circularity
+	params.filterByCircularity = true;
+	params.minCircularity = 0.6;
+	params.maxCircularity = 0.9;
+	 
+	// Filter by Convexity
+	params.filterByConvexity = false;
+	params.minConvexity = 0.87;
+	 
+	// Filter by Inertia
+	params.filterByInertia = false;
+	params.minInertiaRatio = 0.01;
+
+	params.filterByColor = true;
+	params.blobColor = 0;
+
+	/*#if CV_MAJOR_VERSION < 3   // If you are using OpenCV 2
+ 
+	  // Set up detector with params
+	  SimpleBlobDetector detector(params);
+	 
+	  // You can use the detector this way
+	  // detector.detect( im, keypoints);
+	 
+	#else
+	 
+	  // Set up detector with params
+	  Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
+	 
+	  // SimpleBlobDetector::create creates a smart pointer. 
+	  // So you need to use arrow ( ->) instead of dot ( . )
+	  // detector->detect( im, keypoints);
+	 
+	#endif*/
+	  //SimpleBlobDetector detector(params);
+	cv::Ptr<cv::SimpleBlobDetector> blob_detector = cv::SimpleBlobDetector::create();
+
+	///
+	/*vector<MSERParams> pMSER;
+	vector<MSERParams>::iterator itMSER;
+	itMSER = pMSER.begin();
+*/
+	// Detect blobs.
+	//std::vector<std::vector<cv::KeyPoint> > keypoints;
+	std::vector<KeyPoint> keypoints;
+	cv::Ptr<cv::BRISK> ptrBrisk = cv::BRISK::create();
+	//ptrBrisk->detect(imTmp, objectKeypoints);
+	blob_detector->detect( cameraFeed, keypoints);
+	std::cout<<"length="<<keypoints.size()<<"\n";
+
+	Mat im_with_keypoints;
+	
+	//cameraFeed.copyTo(im_with_keypoints);
+	//findContours(keypoints,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+	CvSeq* seq;  
+	CvMemStorage* storage = cvCreateMemStorage( 0 );  
+	  
+	cvClearMemStorage( storage );  
+	  
+	
+	// Draw detected blobs as red circles.
+	///DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures the size of the circle corresponds to the size of blob
+	
+	drawKeypoints( cameraFeed, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DEFAULT );
+	//drawKeypoints(cameraFeed, keypoints, cameraFeed, Scalar(0,0,255), DrawMatchesFlags::DEFAULT ); 
+	 
+	//Show blobs
+	imshow("keypoints", im_with_keypoints );
+	waitKey(5);
 	
 }
 	
