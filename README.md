@@ -3,6 +3,6 @@
 ##### Compile prerequisites
 * opencv 3
 * gcc
-* tessract
+* tesseract
 * leptonica
 
