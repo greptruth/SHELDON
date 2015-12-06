@@ -5,12 +5,13 @@
 #include <opencv/highgui.h>
 #include <opencv/cv.h>
 
-
+#include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 
-/*#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/objdetect/objdetect.hpp"
@@ -26,8 +27,14 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/ml/ml.hpp"
 #include "opencv2/highgui/highgui_c.h"
-#include "opencv2/highgui/highgui.hpp"*/
+#include "opencv2/highgui/highgui.hpp"
 //#include "opencv2/contrib/contrib.hpp"
+
+//#include <pstream>
+
+
+#include <tesseract/baseapi.h>
+#include <tesseract/strngs.h>
 
 using namespace cv;
 using namespace std;
@@ -190,7 +197,7 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed){
 	}
 }
 
-void blobDetection(Mat cameraFeed)
+void blobDetection(Mat cameraFeed,Mat src)
 {
 	cv::SimpleBlobDetector::Params params;
  
@@ -217,6 +224,13 @@ void blobDetection(Mat cameraFeed)
 
 	params.filterByColor = true;
 	params.blobColor = 0;
+
+	const char* lang = "eng";
+    tesseract::TessBaseAPI tess;
+    //tesseract::TessBaseAPI::SetVariable("tessedit_char_whitelist", "0123456789");
+    //tess.SetVariable("tessedit_char_whitelist", "+-X012345789");
+    tess.Init(NULL, lang, tesseract::OEM_DEFAULT);
+    tess.SetPageSegMode(tesseract::PSM_SINGLE_CHAR);
 
 	/*#if CV_MAJOR_VERSION < 3   // If you are using OpenCV 2
  
@@ -253,7 +267,111 @@ void blobDetection(Mat cameraFeed)
 	std::cout<<"length="<<keypoints.size()<<"\n";
 
 	Mat im_with_keypoints;
-	
+
+	Mat dst = Mat::zeros(cameraFeed.rows, cameraFeed.cols, CV_8UC3);
+	vector< vector<Point> > contours,Contours;
+	vector<Vec4i> hierarchy,Hierarchy;
+	findContours( cameraFeed, contours, hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+
+	Mat ROI1,ROI2,ROI3,ROI4;
+	int idx = 0;
+    for( int i=1; idx >= 0; idx = hierarchy[idx][0],i++ )
+    {
+        Scalar color( 255,255,255);
+        drawContours( dst, contours, idx, color, CV_FILLED, 8, hierarchy );
+
+        Rect R=boundingRect(contours[idx]);
+        std::cout<<"here moherfucker \n";
+        //R = Rect(R.x+5,R.y+5,R.width,R.height);
+        cv::Rect myROI(100,100,100,100);
+        Mat temp1,temp2,temp3,temp4,temp5;
+
+        temp1 = src(R);
+        //imshow("temp1",temp1);
+        resize(temp1, temp2, Size(300,300), 0, 0, INTER_CUBIC);
+        temp1=temp2.clone();
+        temp2 = temp1(myROI);
+
+
+        imshow("temp2",temp2);
+        tess.SetImage((uchar*)temp2.data, temp2.size().width, temp2.size().height,temp2.channels(), temp2.step1());
+	    char* out1 = tess.GetUTF8Text();
+	    std::cout << "tess intermediate \n"<<out1 << std::endl;
+	    imwrite( "/home/aytas32/temp2.jpg", temp2 );
+	    /*redi::ipstream proc("./some_command", redi::pstreams::pstderr);
+  		std::string line;
+  		while (std::getline(proc.out(), line))
+    	std::cout << "result \n" << line;*/
+	    /*std::string result = system( "g++ -I/usr/local/include `pkg-config --cflags --libs tesseract` ip.cpp" ) ;
+        std::cout << "result \n"<<result << std::endl;*/
+        //temp1(myROI).copyTo(temp2);
+        /*for(int k=0;k<100;k++)
+        {
+        	for(int j=0;j<100;j++)
+        		temp2[k][j]=temp1[k][j];
+        }*/
+        resize(temp2, temp3, Size(100,100), 0, 0, INTER_CUBIC);
+
+        temp4=temp3;
+        inRange(temp4,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),temp5);
+        findContours( temp5, Contours, Hierarchy,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+        Mat temp6(temp5.rows, temp5.cols, CV_8UC3,Scalar(255,255,255));
+        for( int Idx=0; Idx >= 0; Idx = Hierarchy[Idx][0] )
+        	drawContours( temp6, Contours, Idx, Scalar(0,0,0), CV_FILLED, 8, Hierarchy );
+
+        //morphOps(temp2);
+        //Mat grHistrogram(301,260,CV_8UC1,Scalar(0,0,0));
+        Mat erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
+        /*dilate(temp6,temp6,erodeElement);
+        dilate(temp6,temp6,erodeElement);
+        dilate(temp6,temp6,erodeElement);
+        dilate(temp6,temp6,erodeElement);
+        */
+
+        /*Mat temp7 = Mat::zeros(temp.rows, temp5.cols, CV_8UC3);
+        
+        src.copyTo(dst(Rect(left, top, src.cols, src.rows)));
+*/
+        imshow("temp6",temp6);
+
+
+        tess.SetImage((uchar*)temp6.data, temp6.size().width, temp6.size().height, temp6.channels(), temp6.step1());
+	    char* out = tess.GetUTF8Text();
+	    std::cout << "tess \n"<<out << std::endl;
+
+        waitKey(5000);
+        
+        switch(i)
+        {
+        	case 1: ROI1=temp5;
+        			imwrite( "1.jpg", temp6 );
+        		break;
+        	case 2:ROI2=temp5;
+        			imwrite( "2.jpg", temp6 );
+        		break;
+        	case 3:ROI3=temp5;
+        			imwrite( "3.jpg", temp6 );
+        		break;
+        	case 4:ROI4=temp5;
+        			imwrite( "4.jpg", temp6 );
+        		break;
+        }
+    }
+
+    //imshow("cropped1", ROI1 );
+    //imshow("cropped2",ROI2);
+    //imshow("cropped3",ROI3);
+    //imshow("cropped4",ROI4);
+
+    
+
+    /*tess.SetImage((uchar*)dst.data, dst.cols, dst.size().height, 1, dst.cols);
+    char* out = tess.GetUTF8Text();
+    std::cout << out << std::endl;*/
+
+    namedWindow( "Components", 1 );
+    imshow( "Components", dst );	
+
 	//cameraFeed.copyTo(im_with_keypoints);
 	//findContours(keypoints,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
 	CvSeq* seq;  
@@ -261,26 +379,35 @@ void blobDetection(Mat cameraFeed)
 	  
 	cvClearMemStorage( storage );  
 	  
-	
+	// cvFindContours the 12 + 1 extra object  
+	// for white backgrounds and black spots, hence  
+	// subtract 1  
+	/*num_blobs = cvFindContours( img_bw,  
+	                storage,  
+	                &seq,  
+	                sizeof( CvContour ),  
+	                CV_RETR_LIST,  
+	                CV_CHAIN_APPROX_NONE,  
+	                cvPoint( 0, 0 ) ) - 1; */ 
+
 	// Draw detected blobs as red circles.
-	///DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures the size of the circle corresponds to the size of blob
+	// DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures the size of the circle corresponds to the size of blob
 	
-	drawKeypoints( cameraFeed, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DEFAULT );
+	//drawKeypoints( cameraFeed, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DEFAULT );
 	//drawKeypoints(cameraFeed, keypoints, cameraFeed, Scalar(0,0,255), DrawMatchesFlags::DEFAULT ); 
 	 
-	//Show blobs
-	imshow("keypoints", im_with_keypoints );
+	// Show blobs
+	//imshow("keypoints", im_with_keypoints );
 	waitKey(5);
-	
 }
 	
 int main(int argc, char* argv[])
 {
 	//some boolean variables for different functionality within this
 	//program
-    bool trackObjects = false;
+    bool trackObjects = true;
     bool useMorphOps = true;
-    bool blobDetect = false;
+    bool blobDetect = true;
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
 	//matrix storage for HSV image
@@ -296,21 +423,21 @@ int main(int argc, char* argv[])
 	//video capture object to acquire webcam feed
 	VideoCapture capture;
 	//open capture object at location zero (default location for webcam)
-	///capture.open(0);
+	capture.open(0);
 	//set height and width of capture frame
-	///capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
-	///capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
+	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
+	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
 	while(1){
 		//store image to matrix
-		///capture.read(cameraFeed);
-		cameraFeed = imread("/home/aytas32/Desktop/as2.jpg", CV_LOAD_IMAGE_UNCHANGED);;
+		capture.read(cameraFeed);
+		cameraFeed = imread("/home/aytas32/Desktop/ass.jpg", CV_LOAD_IMAGE_UNCHANGED);;
 		//convert frame from BGR to HSV colorspace
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 		//filter HSV image between values and store filtered image to
 		//threshold matrix
-		inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
+		inRange(HSV,Scalar(0,0,0),Scalar(0,0,80),threshold);
 		//perform morphological operations on thresholded image to eliminate noise
 		//and emphasize the filtered object(s)
 		if(useMorphOps)
@@ -324,7 +451,7 @@ int main(int argc, char* argv[])
 		//
 		//
 		if(blobDetect)
-			blobDetection(threshold);
+			blobDetection(threshold,cameraFeed);
 
 		//show frames 
 		imshow(windowName2,threshold);
@@ -333,6 +460,7 @@ int main(int argc, char* argv[])
 		
 
 		//delay 30ms so that screen can refresh.
+		//image will not appear without this waitKey() command
 		waitKey(30);
 	}
 
