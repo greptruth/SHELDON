@@ -286,11 +286,19 @@ void blobDetection(Mat cameraFeed,Mat src)
         cv::Rect myROI(100,100,100,100);
         Mat temp1,temp2,temp3,temp4,temp5;
 
+
+
         temp1 = src(R);
         //imshow("temp1",temp1);
         resize(temp1, temp2, Size(300,300), 0, 0, INTER_CUBIC);
         temp1=temp2.clone();
         temp2 = temp1(myROI);
+
+       
+    	src.at<Vec3b>(R.x + R.width/2,R.y + R.height/2)[2] = 255; 
+    	temp2.at<Vec3b>(temp2.size().width/2,temp2.size().height/2)[2] = 255;
+    	std::cout<<"this shit"<<R.x<<"    "<<R.y<<"\n";
+
 
 
         imshow("temp2",temp2);
@@ -339,7 +347,7 @@ void blobDetection(Mat cameraFeed,Mat src)
 	    char* out = tess.GetUTF8Text();
 	    std::cout << "tess \n"<<out << std::endl;
 
-        waitKey(5000);
+        waitKey(500);
         
         switch(i)
         {
@@ -370,7 +378,9 @@ void blobDetection(Mat cameraFeed,Mat src)
     std::cout << out << std::endl;*/
 
     namedWindow( "Components", 1 );
-    imshow( "Components", dst );	
+    imshow( "Components", dst );
+    resize(src, src, Size(1000,1000), 0, 0, INTER_CUBIC);
+    imshow("src",src);	
 
 	//cameraFeed.copyTo(im_with_keypoints);
 	//findContours(keypoints,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
@@ -425,13 +435,13 @@ int main(int argc, char* argv[])
 	//open capture object at location zero (default location for webcam)
 	capture.open(0);
 	//set height and width of capture frame
-	capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
-	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
+	///capture.set(CV_CAP_PROP_FRAME_WIDTH,FRAME_WIDTH);
+	///capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
 	while(1){
 		//store image to matrix
-		capture.read(cameraFeed);
+		///capture.read(cameraFeed);
 		cameraFeed = imread("/home/aytas32/Desktop/ass.jpg", CV_LOAD_IMAGE_UNCHANGED);;
 		//convert frame from BGR to HSV colorspace
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
