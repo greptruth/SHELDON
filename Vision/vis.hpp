@@ -31,4 +31,26 @@
 #include <tesseract/baseapi.h>
 #include <tesseract/strngs.h>
 
+using namespace cv;
+using namespace std;
+
+
+void on_trackbar( int, void* );
+void createTrackbars();
+
+string intToString(int);
+
+void drawObject(int x, int y,Mat &frame);
+
+void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed);
+
+void morphOps(Mat &thresh,int erd,int dil);
+
+void markerDetection(Mat HSV,Mat cameraFeed);
+
+void startDetection(Mat HSV,Mat cameraFeed);
+
+void endDetection(Mat HSV,Mat cameraFeed);
+
+void botDetection(Mat HSV,Mat cameraFeed);
 

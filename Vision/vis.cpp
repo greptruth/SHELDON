@@ -1,5 +1,5 @@
 #include "vis.hpp"
-
+#include <string>
 
 using namespace cv;
 using namespace std;
